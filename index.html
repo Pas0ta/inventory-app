@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor de Inventario Multi-Tienda</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            min-height: calc(100vh - 200px);
+        }
+
+        .sidebar {
+            background: #f8f9fa;
+            border-right: 1px solid #e0e0e0;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .sidebar h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+
+        .tienda-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .tienda-item:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .tienda-item.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .tienda-item .delete-btn {
+            background: #ff4757;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .tienda-item:hover .delete-btn {
+            opacity: 1;
+        }
+
+        .add-tienda-btn {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            margin-bottom: 20px;
+            transition: background 0.3s;
+        }
+
+        .add-tienda-btn:hover {
+            background: #764ba2;
+        }
+
+        .content {
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto auto;
+            gap: 15px;
+            margin-bottom: 25px;
+            align-items: end;
+        }
+
+        .search-box {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .search-box label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .search-box input {
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: #2ed573;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #26de81;
+        }
+
+        .btn-danger {
+            background: #ff4757;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #ff3838;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.9em;
+        }
+
+        .products-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .products-table thead {
+            background: #667eea;
+            color: white;
+        }
+
+        .products-table th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .products-table td {
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .products-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .stock-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stock-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1.2em;
+            transition: all 0.2s;
+        }
+
+        .stock-btn.plus {
+            background: #2ed573;
+            color: white;
+        }
+
+        .stock-btn.plus:hover {
+            background: #26de81;
+            transform: scale(1.1);
+        }
+
+        .stock-btn.minus {
+            background: #ff4757;
+            color: white;
+        }
+
+        .stock-btn.minus:hover {
+            background: #ff3838;
+            transform: scale(1.1);
+        }
+
+        .stock-value {
+            min-width: 50px;
+            text-align: center;
+            font-weight: 600;
+            padding: 5px 10px;
+            background: #f0f4ff;
+            border-radius: 4px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-content h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 1em;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .no-tienda {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                border-right: none;
+                border-bottom: 1px solid #e0e0e0;
+                display: flex;
+                overflow-x: auto;
+                padding: 10px;
+            }
+
+            .controls {
+                grid-template-columns: 1fr;
+            }
+
+            header h1 {
+                font-size: 1.8em;
+            }
+
+            .products-table {
+                font-size: 0.9em;
+            }
+
+            .products-table th,
+            .products-table td {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📦 Gestor de Inventario</h1>
+            <p>Gestiona productos y stock de múltiples tiendas</p>
+        </header>
+
+        <div class="main-content">
+            <div class="sidebar">
+                <button class="add-tienda-btn" onclick="abrirModalTienda()">+ Nueva Tienda</button>
+                <h3>Tiendas</h3>
+                <div id="tiendas-list"></div>
+            </div>
+
+            <div class="content">
+                <div id="alert" class="alert"></div>
+
+                <div id="no-tienda" class="no-tienda">
+                    <h2>Selecciona una tienda para comenzar</h2>
+                    <p>Crea una nueva tienda o selecciona una existente del panel izquierdo</p>
+                </div>
+
+                <div id="tienda-content" style="display: none;">
+                    <div class="controls">
+                        <div class="search-box">
+                            <label>Buscar por nombre o referencia</label>
+                            <input type="text" id="search-input" placeholder="Buscar..." onkeyup="buscarProductos()">
+                        </div>
+                        <button class="btn btn-primary" onclick="abrirModalScrape()">🔄 Actualizar Productos</button>
+                        <button class="btn btn-success" onclick="cargarProductos()">🔃 Recargar</button>
+                    </div>
+
+                    <div id="productos-container">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            <p>Cargando productos...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para nueva tienda -->
+    <div id="modal-tienda" class="modal">
+        <div class="modal-content">
+            <h2>Nueva Tienda</h2>
+            <div class="form-group">
+                <label>Nombre de la tienda</label>
+                <input type="text" id="tienda-nombre" placeholder="Ej: Farmasi">
+            </div>
+            <div class="form-group">
+                <label>URL de la tienda</label>
+                <input type="url" id="tienda-url" placeholder="Ej: https://farmasi.es">
+            </div>
+            <div class="modal-buttons">
+                <button class="btn" onclick="cerrarModalTienda()">Cancelar</button>
+                <button class="btn btn-primary" onclick="crearTienda()">Crear</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para scraping -->
+    <div id="modal-scrape" class="modal">
+        <div class="modal-content">
+            <h2>Actualizar Productos</h2>
+            <p style="margin-bottom: 15px; color: #666;">Se buscarán nuevos productos en la URL de la tienda</p>
+            <div class="modal-buttons">
+                <button class="btn" onclick="cerrarModalScrape()">Cancelar</button>
+                <button class="btn btn-primary" onclick="ejecutarScrape()">Actualizar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5000/api';
+        let tiendaActual = null;
+        let productosOriginales = [];
+
+        // ==================== TIENDAS ====================
+
+        async function cargarTiendas() {
+            try {
+                const response = await fetch(`${API_URL}/tiendas`);
+                const tiendas = await response.json();
+                
+                const lista = document.getElementById('tiendas-list');
+                lista.innerHTML = '';
+
+                if (tiendas.length === 0) {
+                    lista.innerHTML = '<p style="color: #999; text-align: center;">No hay tiendas</p>';
+                    return;
+                }
+
+                tiendas.forEach(tienda => {
+                    const div = document.createElement('div');
+                    div.className = `tienda-item ${tienda.id === tiendaActual ? 'active' : ''}`;
+                    div.innerHTML = `
+                        <span onclick="seleccionarTienda(${tienda.id}, '${tienda.nombre}')" style="flex: 1; cursor: pointer;">
+                            ${tienda.nombre}
+                        </span>
+                        <button class="delete-btn" onclick="eliminarTienda(${tienda.id})">✕</button>
+                    `;
+                    lista.appendChild(div);
+                });
+            } catch (error) {
+                mostrarAlerta('Error al cargar tiendas: ' + error.message, 'error');
+            }
+        }
+
+        function abrirModalTienda() {
+            document.getElementById('modal-tienda').classList.add('active');
+        }
+
+        function cerrarModalTienda() {
+            document.getElementById('modal-tienda').classList.remove('active');
+            document.getElementById('tienda-nombre').value = '';
+            document.getElementById('tienda-url').value = '';
+        }
+
+        async function crearTienda() {
+            const nombre = document.getElementById('tienda-nombre').value.trim();
+            const url = document.getElementById('tienda-url').value.trim();
+
+            if (!nombre || !url) {
+                mostrarAlerta('Por favor completa todos los campos', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/tiendas`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nombre, url })
+                });
+
+                if (!response.ok) throw new Error('Error al crear tienda');
+
+                mostrarAlerta('Tienda creada exitosamente', 'success');
+                cerrarModalTienda();
+                cargarTiendas();
+            } catch (error) {
+                mostrarAlerta('Error: ' + error.message, 'error');
+            }
+        }
+
+        async function eliminarTienda(id) {
+            if (!confirm('¿Estás seguro de que deseas eliminar esta tienda?')) return;
+
+            try {
+                const response = await fetch(`${API_URL}/tiendas/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) throw new Error('Error al eliminar tienda');
+
+                if (tiendaActual === id) {
+                    tiendaActual = null;
+                    document.getElementById('no-tienda').style.display = 'block';
+                    document.getElementById('tienda-content').style.display = 'none';
+                }
+
+                mostrarAlerta('Tienda eliminada', 'success');
+                cargarTiendas();
+            } catch (error) {
+                mostrarAlerta('Error: ' + error.message, 'error');
+            }
+        }
+
+        function seleccionarTienda(id, nombre) {
+            tiendaActual = id;
+            document.getElementById('no-tienda').style.display = 'none';
+            document.getElementById('tienda-content').style.display = 'block';
+            document.getElementById('search-input').value = '';
+            cargarTiendas();
+            cargarProductos();
+        }
+
+        // ==================== PRODUCTOS ====================
+
+        async function cargarProductos() {
+            if (!tiendaActual) return;
+
+            try {
+                const response = await fetch(`${API_URL}/productos/${tiendaActual}`);
+                const productos = await response.json();
+                productosOriginales = productos;
+                mostrarProductos(productos);
+            } catch (error) {
+                mostrarAlerta('Error al cargar productos: ' + error.message, 'error');
+            }
+        }
+
+        function mostrarProductos(productos) {
+            const container = document.getElementById('productos-container');
+
+            if (productos.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No hay productos</h3>
+                        <p>Haz clic en "Actualizar Productos" para importar productos de la tienda</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = `
+                <table class="products-table">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Referencia</th>
+                            <th>Stock</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            productos.forEach(producto => {
+                html += `
+                    <tr>
+                        <td>${producto.nombre}</td>
+                        <td><code style="background: #f0f4ff; padding: 4px 8px; border-radius: 4px;">${producto.referencia}</code></td>
+                        <td>
+                            <div class="stock-controls">
+                                <button class="stock-btn minus" onclick="actualizarStock(${producto.id}, -1)">−</button>
+                                <span class="stock-value">${producto.stock || 0}</span>
+                                <button class="stock-btn plus" onclick="actualizarStock(${producto.id}, 1)">+</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                    </tbody>
+                </table>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        function buscarProductos() {
+            const search = document.getElementById('search-input').value.toLowerCase();
+            
+            if (!search) {
+                mostrarProductos(productosOriginales);
+                return;
+            }
+
+            const filtrados = productosOriginales.filter(p => 
+                p.nombre.toLowerCase().includes(search) || 
+                p.referencia.toLowerCase().includes(search)
+            );
+
+            mostrarProductos(filtrados);
+        }
+
+        async function actualizarStock(id, cantidad) {
+            try {
+                const response = await fetch(`${API_URL}/productos/${id}/stock`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cantidad })
+                });
+
+                if (!response.ok) throw new Error('Error al actualizar stock');
+
+                cargarProductos();
+            } catch (error) {
+                mostrarAlerta('Error: ' + error.message, 'error');
+            }
+        }
+
+        // ==================== SCRAPING ====================
+
+        function abrirModalScrape() {
+            document.getElementById('modal-scrape').classList.add('active');
+        }
+
+        function cerrarModalScrape() {
+            document.getElementById('modal-scrape').classList.remove('active');
+        }
+
+        async function ejecutarScrape() {
+            if (!tiendaActual) return;
+
+            try {
+                // Obtener URL de la tienda
+                const tiendas = await fetch(`${API_URL}/tiendas`).then(r => r.json());
+                const tienda = tiendas.find(t => t.id === tiendaActual);
+
+                if (!tienda) {
+                    mostrarAlerta('Tienda no encontrada', 'error');
+                    return;
+                }
+
+                cerrarModalScrape();
+                mostrarAlerta('Buscando productos... esto puede tomar un momento', 'success');
+
+                const response = await fetch(`${API_URL}/scrape`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        url: tienda.url, 
+                        tiendaId: tiendaActual 
+                    })
+                });
+
+                const resultado = await response.json();
+
+                if (!response.ok) {
+                    mostrarAlerta('Error: ' + resultado.error, 'error');
+                    return;
+                }
+
+                mostrarAlerta(`✓ Se encontraron y actualizaron ${resultado.productosInsertados} productos`, 'success');
+                cargarProductos();
+            } catch (error) {
+                mostrarAlerta('Error: ' + error.message, 'error');
+            }
+        }
+
+        // ==================== UTILIDADES ====================
+
+        function mostrarAlerta(mensaje, tipo) {
+            const alert = document.getElementById('alert');
+            alert.textContent = mensaje;
+            alert.className = `alert show alert-${tipo}`;
+            
+            setTimeout(() => {
+                alert.classList.remove('show');
+            }, 4000);
+        }
+
+        // Inicializar
+        cargarTiendas();
+    </script>
+</body>
+</html>

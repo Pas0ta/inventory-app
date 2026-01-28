@@ -44,8 +44,9 @@ CREATE INDEX IF NOT EXISTS idx_products_store_id ON products(store_id);
 CREATE INDEX IF NOT EXISTS idx_inventory_movements_product_id ON inventory_movements(product_id);
 CREATE INDEX IF NOT EXISTS idx_inventory_movements_store_id ON inventory_movements(store_id);
 
--- Crear vista para resumen de inventario
-CREATE OR REPLACE VIEW inventory_summary AS
+-- Crear vista para resumen de inventario (sin SECURITY DEFINER)
+DROP VIEW IF EXISTS inventory_summary CASCADE;
+CREATE VIEW inventory_summary AS
 SELECT 
     p.id,
     p.name,

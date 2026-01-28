@@ -515,6 +515,38 @@
         </div>
     </div>
 
+    <!-- Modal para imágenes -->
+    <div id="modal-imagen" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <h2>Gestionar Imagen del Producto</h2>
+            <input type="hidden" id="producto-id-imagen">
+            
+            <div style="margin-bottom: 20px; border-bottom: 1px solid #e0e0e0; padding-bottom: 15px;">
+                <h3 style="margin-bottom: 10px; color: #667eea;">Opción 1: Subir desde tu dispositivo</h3>
+                <div class="form-group">
+                    <label>Selecciona una imagen</label>
+                    <input type="file" id="file-input" accept="image/*" style="padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; width: 100%;">
+                </div>
+                <div id="preview-imagen" style="margin-bottom: 10px;"></div>
+                <button class="btn btn-success" onclick="subirImagen()" style="width: 100%;">📤 Subir Imagen</button>
+            </div>
+
+            <div style="margin-bottom: 20px; border-bottom: 1px solid #e0e0e0; padding-bottom: 15px;">
+                <h3 style="margin-bottom: 10px; color: #667eea;">Opción 2: Descargar desde URL</h3>
+                <div class="form-group">
+                    <label>URL de la imagen</label>
+                    <input type="url" id="url-imagen" placeholder="https://ejemplo.com/imagen.jpg" style="padding: 10px; border: 2px solid #e0e0e0; border-radius: 6px; width: 100%;">
+                </div>
+                <button class="btn btn-primary" onclick="descargarImagenDesdeUrl()" style="width: 100%;">🔗 Descargar desde URL</button>
+            </div>
+
+            <div class="modal-buttons">
+                <button class="btn btn-danger" onclick="eliminarImagen(document.getElementById('producto-id-imagen').value)">🗑️ Eliminar Imagen</button>
+                <button class="btn" onclick="cerrarModalImagen()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const API_URL = 'http://localhost:5000/api';
         let tiendaActual = null;
@@ -806,6 +838,119 @@
         window.addEventListener('offline', () => {
             mostrarAlerta('Sin conexión - Modo offline', 'error');
         });
+
+        // ==================== GESTIÓN DE IMÁGENES ====================
+
+        // Abrir modal para subir imagen
+        function abrirModalImagen(productoId) {
+            document.getElementById('modal-imagen').classList.add('active');
+            document.getElementById('producto-id-imagen').value = productoId;
+            document.getElementById('preview-imagen').innerHTML = '';
+            document.getElementById('file-input').value = '';
+        }
+
+        // Cerrar modal de imagen
+        function cerrarModalImagen() {
+            document.getElementById('modal-imagen').classList.remove('active');
+            document.getElementById('preview-imagen').innerHTML = '';
+            document.getElementById('file-input').value = '';
+        }
+
+        // Preview de imagen antes de subir
+        document.getElementById('file-input')?.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const preview = document.getElementById('preview-imagen');
+                    preview.innerHTML = `<img src="${event.target.result}" style="max-width: 100%; max-height: 300px; border-radius: 8px;">`;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Subir imagen manualmente
+        async function subirImagen() {
+            const productoId = document.getElementById('producto-id-imagen').value;
+            const fileInput = document.getElementById('file-input');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                mostrarAlerta('Por favor selecciona una imagen', 'error');
+                return;
+            }
+
+            try {
+                const formData = new FormData();
+                formData.append('imagen', file);
+
+                const response = await fetch(`${API_URL}/productos/${productoId}/imagen`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error);
+                }
+
+                const resultado = await response.json();
+                mostrarAlerta('Imagen subida exitosamente', 'success');
+                cerrarModalImagen();
+                cargarProductos();
+            } catch (error) {
+                mostrarAlerta('Error al subir imagen: ' + error.message, 'error');
+            }
+        }
+
+        // Descargar imagen desde URL
+        async function descargarImagenDesdeUrl() {
+            const productoId = document.getElementById('producto-id-imagen').value;
+            const urlImagen = document.getElementById('url-imagen').value.trim();
+
+            if (!urlImagen) {
+                mostrarAlerta('Por favor ingresa una URL de imagen', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/productos/${productoId}/descargar-imagen`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ imageUrl: urlImagen })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error);
+                }
+
+                const resultado = await response.json();
+                mostrarAlerta('Imagen descargada exitosamente', 'success');
+                cerrarModalImagen();
+                cargarProductos();
+            } catch (error) {
+                mostrarAlerta('Error al descargar imagen: ' + error.message, 'error');
+            }
+        }
+
+        // Eliminar imagen de producto
+        async function eliminarImagen(productoId) {
+            if (!confirm('¿Estás seguro de que deseas eliminar esta imagen?')) return;
+
+            try {
+                const response = await fetch(`${API_URL}/productos/${productoId}/imagen`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) throw new Error('Error al eliminar imagen');
+
+                mostrarAlerta('Imagen eliminada', 'success');
+                cargarProductos();
+            } catch (error) {
+                mostrarAlerta('Error: ' + error.message, 'error');
+            }
+        }
     </script>
 </body>
 </html>

@@ -20,6 +20,8 @@ CREATE TABLE IF NOT EXISTS products (
     price DECIMAL(10, 2),
     quantity INTEGER DEFAULT 0,
     description TEXT,
+    image_url TEXT,
+    image_path TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

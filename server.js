@@ -5,13 +5,22 @@ const bodyParser = require('body-parser');
 const { createClient } = require('@supabase/supabase-js');
 const axios = require('axios');
 const cheerio = require('cheerio');
+const multer = require('multer');
+const { setupImageEndpoints } = require('./image-endpoints');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors());
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: '50mb' }));
+app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
+
+// Configurar multer para carga de archivos
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB
+});
 
 // Supabase client
 const supabase = createClient(
@@ -121,9 +130,6 @@ app.post('/api/scrape', async (req, res) => {
     const productos = [];
 
     // Estrategia genérica: buscar elementos comunes de productos
-    // Esto puede variar según la estructura HTML de cada tienda
-    
-    // Intenta encontrar productos por clases comunes
     $('[class*="product"], [class*="item"], article').each((index, element) => {
       const nombre = $(element).find('[class*="name"], [class*="title"], h2, h3').text().trim();
       const referencia = $(element).find('[class*="sku"], [class*="code"], [class*="ref"]').text().trim() 
@@ -231,6 +237,11 @@ app.put('/api/productos/:id/stock', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// ==================== IMÁGENES ====================
+
+// Configurar endpoints de imágenes
+setupImageEndpoints(app, supabase, upload);
 
 // ==================== HEALTH CHECK ====================
 
